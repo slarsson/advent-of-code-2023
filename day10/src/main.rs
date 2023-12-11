@@ -14,11 +14,76 @@ fn main() {
     let width = input.lines().next().unwrap().chars().count();
 
     println!("part1: {:?}", part1(&grid));
+    println!("part2: {:?}", part2(&grid, width, height));
 }
 
 fn part1(grid: &HashMap<(i32, i32), char>) -> i32 {
     let path = resolve_path(grid);
     return (path.len() as i32 + 1) / 2;
+}
+
+fn part2(grid: &HashMap<(i32, i32), char>, width: usize, height: usize) -> i32 {
+    let path = resolve_path(grid);
+
+    let start = grid.iter().find(|x| *x.1 == 'S').unwrap().0;
+
+    let mut border: HashSet<(i32, i32)> = path.iter().map(|x| x.0).collect();
+    border.insert(start.clone());
+
+    let (first_coord, first_value) = path.get(0).unwrap();
+    let (last_coord, last_value) = path.iter().last().unwrap();
+
+    let to_first = (first_coord.0 - start.0, first_coord.1 - start.1);
+    let to_last = (last_coord.0 - start.0, last_coord.1 - start.1);
+
+    let mut start_tile = 'S';
+    for v in ['|', '-', 'F', 'L', 'J', '7'] {
+        if is_connected(to_first, v, *first_value) && is_connected(to_last, v, *last_value) {
+            start_tile = v;
+            break;
+        }
+    }
+
+    let mut sum = 0;
+
+    for y in 0..height {
+        for x in 0..width {
+            // ignore if border
+            if border.get(&(x as i32, y as i32)).is_some() {
+                continue;
+            }
+
+            // use point-in-polygon algorithm
+            let mut collisions = 0;
+            for p in (0..x).rev() {
+                let coord = (p as i32, y as i32);
+
+                if border.get(&coord).is_none() {
+                    continue;
+                }
+
+                let mut tile = grid.get(&coord).unwrap().to_owned();
+
+                // replace start tile with border part
+                if tile == 'S' {
+                    tile = start_tile;
+                }
+
+                // avoid "top" border
+                if tile == 'F' || tile == '-' || tile == '7' {
+                    continue;
+                }
+
+                collisions += 1;
+            }
+
+            if collisions % 2 == 1 {
+                sum += 1;
+            }
+        }
+    }
+
+    return sum;
 }
 
 fn resolve_path(grid: &HashMap<(i32, i32), char>) -> Vec<((i32, i32), char)> {
@@ -136,74 +201,3 @@ fn is_connected(change: (i32, i32), from: char, to: char) -> bool {
         _ => false,
     };
 }
-
-// ..........
-// .S------7.
-// .|F----7|.
-// .||....||.
-// .||....||.
-// .|L-7F-J|.
-// .|..||..|.
-// .L--JL--J.
-// ..........
-
-// fn next_direction(current: Direction, next_tile: char) -> Direction {
-//     return match current {
-//         Direction::Up => match next_tile {
-//             'F' => Direction::Right,
-//             '7' => Direction::Left,
-//             '|' => Direction::Up,
-//             _ => panic!("noop"),
-//         },
-//         Direction::Down => match next_tile {
-//             'L' => Direction::Right,
-//             'J' => Direction::Left,
-//             '|' => Direction::Down,
-//             _ => panic!("noop"),
-//         },
-//         Direction::Left => match next_tile {
-//             'F' => Direction::Down,
-//             'L' => Direction::Up,
-//             '-' => Direction::Left,
-//             _ => panic!("noop"),
-//         },
-//         Direction::Right => match next_tile {
-//             '7' => Direction::Down,
-//             'J' => Direction::Up,
-//             '-' => Direction::Right,
-//             _ => panic!("noop"),
-//         },
-//     };
-// }
-
-// https://imgur.com/a/ukstWKO#ZKurCuH
-
-// fn print_grid(
-//     grid: &HashMap<(i32, i32), char>,
-//     border: &HashSet<(i32, i32)>,
-//     seen: &HashSet<(i32, i32)>,
-//     width: usize,
-//     height: usize,
-// ) {
-//     for y in 0..height + 2 {
-//         let mut line = String::new();
-//         for x in 0..width + 2 {
-//             let coord = &((x as i32) - 1, (y as i32) - 1);
-
-//             let border_coord = border.get(coord);
-//             let grid_coord = grid.get(coord);
-//             let seen_coord = seen.get(coord);
-
-//             if border_coord.is_some() {
-//                 line.push('X');
-//             } else if seen_coord.is_some() {
-//                 line.push('@');
-//             } else if grid_coord.is_some() {
-//                 line.push(*grid_coord.unwrap());
-//             } else {
-//                 line.push('_');
-//             }
-//         }
-//         println!("{}", line);
-//     }
-// }
