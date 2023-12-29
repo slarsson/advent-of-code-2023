@@ -19,7 +19,7 @@ fn main() {
     let start = (1, 0);
     let end = (size as i32 - 2, size as i32 - 1);
 
-    println!("part1: {:?}", part1(&path, start, end));
+    println!("part1: {}", part1(&path, start, end));
     println!("part2: {}", part2(&path, start, end));
 }
 
